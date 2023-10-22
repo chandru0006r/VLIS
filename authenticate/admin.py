@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import LandInformations,LandInfoAdmin
 
-# Register your models here.
+
+admin.site.register(LandInformations, LandInfoAdmin)

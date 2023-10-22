@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VLIS</title>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script></head>
+  <style>
+    #map {
+      height: 100%;
+    }
+    
+    /* 
+     * Optional: Makes the sample page fill the window. 
+     */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: "Roboto Condensed", sans-serif;
+    
+    }
+    
+    .polygon-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: blue;
+      border-radius:20px 20px 0px 0px;
+      padding:10px 0px;
+      text-align: center;
+    }
+    
+    
+  </style>
+<body>
+
+  <div id="map"></div>
+    
+  <div id="polygonInfo" class="polygon-info"></div>
+  
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly" defer></script>
+  <script>
+    function initMap() {
+      let map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 15,
+        center: { lat: 13.152330, lng: 80.129269 },
+        mapTypeId: "terrain",
+      });
+    
+      //here this polygonsWithInfo is now for time sake taken as an array but it will retreive data form data base the data base example is shown in models.py
+      const polygonsWithInfo = [
+        {
+          name: "Polygon 1",
+          plot_no: 90,
+          is_government: true,
+          description: "This is the first polygon. Government-owned: Yes",
+          coords: [
+            { lat: 13.1522676, lng: 80.1292143 },
+            { lat: 13.1523865, lng: 80.1292469 },
+            { lat: 13.1523633, lng: 80.1293213 },
+            { lat: 13.1522526, lng: 80.1293035 },
+          ],
+        },
+        {
+      name: "Polygon 2",
+      plot_no: 91,
+      is_government: false,
+      description: "This is the second polygon. Government-owned: No",
+      coords: [
+        { lat: 13.152058, lng: 80.127988 },
+        { lat: 13.152218, lng: 80.127997 },
+        { lat: 13.152386, lng: 80.128035 },
+        { lat: 13.152677, lng: 80.128140 },
+        { lat: 13.152530, lng: 80.128687 },
+        { lat: 13.152001, lng: 80.128594 },
+      ],
+    },
+        {
+          name: "Polygon 3",
+          plot_no: 93,
+          is_government: false,
+          description: "This is the third polygon. Government-owned: No",
+          coords: [
+            { lat: 13.152529, lng: 80.127452 },
+            { lat: 13.152665, lng: 80.127841 },
+            { lat: 13.152707, lng: 80.128007 },
+            { lat: 13.152698, lng: 80.128066 },
+            { lat: 13.152408, lng: 80.127964 },
+            { lat: 13.152235, lng: 80.127923 },
+            { lat: 13.152043, lng: 80.127927 },
+            { lat: 13.151991, lng: 80.127476 },
+            
+          ],
+        },
+        {
+      name: "Polygon 4",
+      plot_no: 94,
+      is_government: false,
+      description: "This is a new polygon. Government-owned: No",
+      coords: [
+        { lat: 13.151991, lng: 80.127476 },
+        { lat: 13.152043, lng: 80.127927 },
+        { lat: 13.152058, lng: 80.127988 },
+        { lat: 13.152017, lng: 80.128358 },
+        { lat: 13.151519, lng: 80.128400 },
+        { lat: 13.151461, lng: 80.127993 },
+        { lat: 13.151446, lng: 80.127835 },
+        { lat: 13.151461, lng: 80.127680 },
+        { lat: 13.151495, lng: 80.127559 },
+        { lat: 13.151516, lng: 80.127507 },
+      ],
+    },
+      ];
+    
+      const polygons = [];
+      const numberIcons = [];
+      let activePolygon = null;
+    
+      function calculatePolygonArea(coords) {
+        const polygonPath = new google.maps.MVCArray();
+        coords.forEach(coord => {
+          polygonPath.push(new google.maps.LatLng(coord.lat, coord.lng));
+        });
+        return google.maps.geometry.spherical.computeArea(polygonPath);
+      }
+    
+      function updatePolygonInfo(polygonInfo) {
+        const areaSqFt = calculatePolygonArea(polygonInfo.coords).toFixed(2);
+        const polygonInfoContainer = document.getElementById("polygonInfo");
+        polygonInfoContainer.innerHTML = `<strong>${polygonInfo.name}</strong><br>${polygonInfo.description}<br>Area: ${areaSqFt} sq.ft`;
+      }
+    
+      function setStrokeColor(polygon, color) {
+        polygon.setOptions({
+          strokeColor: color,
+        });
+      }
+    
+      function addNumberIcon(map, center, number, plotNo) {
+        const scale = Math.max(1, number / 10);
+        const marker = new google.maps.Marker({
+          position: center,
+          label: {
+            text: plotNo.toString(),
+            color: "black",
+            fontSize: "12px",
+          },
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: "white",
+            fillOpacity: 1,
+            strokeColor: "black",
+            strokeWeight: 1,
+            scale: 10,
+          },
+          map: map,
+        });
+        return marker;
+      }
+    
+      map.addListener("click", () => {
+        if (activePolygon) {
+          setStrokeColor(activePolygon, "#000000");
+          updatePolygonInfo(activePolygon.polygonInfo);
+          document.getElementById("polygonInfo").style.display = "block";
+          activePolygon = null;
+        }
+      });
+    
+      google.maps.event.addListener(map, 'zoom_changed', () => {
+        const currentZoom = map.getZoom();
+    
+        if (currentZoom >= 17) {
+          polygonsWithInfo.forEach((polygonInfo, index) => {
+            if (!polygons[index]) {
+              let fillColor = "#0000FF";
+              let strokeColor = "#000000";
+              if (polygonInfo.is_government) {
+                fillColor = "rgba(255, 0, 0, 0.5)";
+              }
+    
+              const polygon = new google.maps.Polygon({
+                paths: polygonInfo.coords,
+                fillColor: fillColor,
+                strokeColor: strokeColor,
+                strokeOpacity: 0.8,
+                strokeWeight: 1.5,
+                map: map,
+              });
+    
+              polygon.polygonInfo = polygonInfo;
+    
+              google.maps.event.addListener(polygon, 'click', () => {
+                if (activePolygon) {
+                  setStrokeColor(activePolygon, "#000000");
+                }
+                setStrokeColor(polygon, "blue");
+                updatePolygonInfo(polygonInfo);
+                document.getElementById("polygonInfo").style.display = "block";
+                activePolygon = polygon;
+              });
+    
+              polygons[index] = polygon;
+            } else {
+              polygons[index].setMap(map);
+            }
+          });
+        } else {
+          polygons.forEach((polygon, index) => {
+            if (polygon) {
+              polygon.setMap(null);
+            }
+          });
+        }
+    
+        if (currentZoom >= 19) {
+          polygonsWithInfo.forEach((polygonInfo, index) => {
+            if (!numberIcons[index]) {
+              const center = getPolygonCenter(polygonInfo.coords);
+              const marker = addNumberIcon(map, center, index + 1, polygonInfo.plot_no);
+              numberIcons[index] = marker;
+            } else {
+              numberIcons[index].setMap(map);
+            }
+          });
+        } else {
+          numberIcons.forEach((numberIcon, index) => {
+            if (numberIcon) {
+              numberIcon.setMap(null);
+            }
+          });
+        }
+      });
+    
+      function getPolygonCenter(coords) {
+        const bounds = new google.maps.LatLngBounds();
+        coords.forEach(coord => {
+          bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+        });
+        return bounds.getCenter();
+      }
+    }
+    
+    window.initMap = initMap;
+    
+  </script>
+</body>
+</html>

@@ -23,8 +23,12 @@
         <li class="list-group-item"><b>Username:</b> {{ user.username }}</li>
         <li class="list-group-item"><b>Email:</b> {{ user.email }}</li>
     </ul> 
+{% comment %} the ,ap interface will be shown with further more information{% static "" %} {% endcomment %}
+    {% include 'authenticate\templates\map.html' %}
+
     {% elif request.user.is_authenticated %}
     <h1 class="text-muted text-center mt-3 mb-3">Welcome to VLIS</h1>
+    {% include 'authenticate\templates\map.html' %}
     {% else %}
     <h1 class="text-muted text-center mt-5 mb-5"></h1>
         <a class="btn btn-primary btn-lg btn-block" href="{% url 'adminlogin' %}">Admin Login</a>
